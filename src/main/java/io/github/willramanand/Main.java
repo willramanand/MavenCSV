@@ -16,8 +16,11 @@ public class Main {
           .newBufferedReader(Paths.get(ClassLoader.getSystemResource("SEOExample.csv").toURI()));
       CSVReader csvReader = new CSVReader(reader);
 
+      // Read initial categories at header
       String[] categories;
       categories = csvReader.readNext();
+
+      // Begin reading through records
       String[] record;
       int count = 1;
       while ((record = csvReader.readNext()) != null) {
