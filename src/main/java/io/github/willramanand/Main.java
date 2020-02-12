@@ -69,11 +69,8 @@ public class Main {
   }
 
   public static void CSVtoDB() throws SQLException {
+    initializeDb();
     try {
-      String url = "jdbc:sqlite:C:\\Users\\willr\\IdeaProjects\\MavenCSV\\src\\main\\resources\\db\\bookstore.db";
-      System.out.println("Connection to Database has been established");
-      conn = DriverManager.getConnection(url);
-
       // Read file path and use as input for csvreader.
       Reader reader = Files
           .newBufferedReader(
@@ -107,14 +104,11 @@ public class Main {
     } catch (IOException | URISyntaxException | SQLException e) {
       e.printStackTrace();
     }
-    conn.close();
-    System.out.println("Connection to database has been successfully closed!");
+   closeDb();
   }
 
   public static void JSONtoDB() throws FileNotFoundException, SQLException {
-    String url = "jdbc:sqlite:C:\\Users\\willr\\IdeaProjects\\MavenCSV\\src\\main\\resources\\db\\bookstore.db";
-    System.out.println("Connection to Database has been established");
-    conn = DriverManager.getConnection(url);
+    initializeDb();
 
     Gson gson = new Gson();
     JsonReader jread = new JsonReader(new FileReader("src\\main\\resources\\authors.json"));
@@ -136,6 +130,16 @@ public class Main {
 
       preparedStatement.close();
     }
+    closeDb();
+  }
+
+  public static void initializeDb() throws SQLException {
+    String url = "jdbc:sqlite:./src/main/resources/db/bookstore.db";
+    System.out.println("Connection to Database has been established");
+    conn = DriverManager.getConnection(url);
+  }
+
+  public static void closeDb() throws SQLException {
     conn.close();
     System.out.println("Connection to database has been successfully closed!");
   }
