@@ -1,15 +1,39 @@
 package io.github.willramanand;
 
+
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
 import com.opencsv.CSVReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class Main {
 
-  public static void main(String[] args) {
+  static Connection conn = null;
+
+  public static void main(String[] args) throws SQLException, IOException, URISyntaxException {
+    System.out.println("---------Iteration 1---------");
+    readExampleFile();
+
+    System.out.println("\n---------Iteration 2----------");
+    System.out.println("Reading from CSV and inserting into database.");
+    CSVtoDB();
+
+    System.out.println("Reading from JSON and inserting into database.");
+    JSONtoDB();
+
+  }
+
+  public static void readExampleFile() {
     try {
       // Read file path and use as input for csvreader.
       Reader reader = Files
@@ -42,6 +66,78 @@ public class Main {
       System.out.println("Error finding file!");
       e.printStackTrace();
     }
+  }
 
+  public static void CSVtoDB() throws SQLException {
+    try {
+      String url = "jdbc:sqlite:C:\\Users\\willr\\IdeaProjects\\MavenCSV\\src\\main\\resources\\db\\bookstore.db";
+      System.out.println("Connection to Database has been established");
+      conn = DriverManager.getConnection(url);
+
+      // Read file path and use as input for csvreader.
+      Reader reader = Files
+          .newBufferedReader(
+              Paths.get(ClassLoader.getSystemResource("bookstore_report2.csv").toURI()));
+      CSVReader csvReader = new CSVReader(reader);
+
+      // Read initial categories at header
+      String[] categories;
+      categories = csvReader.readNext();
+
+      // Begin reading through records
+      String[] record;
+      while ((record = csvReader.readNext()) != null) {
+        // Create query
+        String sql = "INSERT INTO book(isbn, book_title, author_name, publisher_name ) VALUES (?, ?, ?, ? )";
+
+        // Set as prepared statement to put dynamic values
+        PreparedStatement preparedStatement = conn.prepareStatement(sql);
+
+        // Insert dynamic values
+        preparedStatement.setString(1, record[0]);
+        preparedStatement.setString(2, record[1]);
+        preparedStatement.setString(3, record[2]);
+        preparedStatement.setString(4, record[3]);
+
+        // Execute query
+        preparedStatement.executeUpdate();
+        preparedStatement.close();
+      }
+
+    } catch (IOException | URISyntaxException | SQLException e) {
+      e.printStackTrace();
+    }
+    conn.close();
+    System.out.println("Connection to database has been successfully closed!");
+  }
+
+  public static void JSONtoDB() throws FileNotFoundException, SQLException {
+    String url = "jdbc:sqlite:C:\\Users\\willr\\IdeaProjects\\MavenCSV\\src\\main\\resources\\db\\bookstore.db";
+    System.out.println("Connection to Database has been established");
+    conn = DriverManager.getConnection(url);
+
+    Gson gson = new Gson();
+    JsonReader jread = new JsonReader(new FileReader("src\\main\\resources\\authors.json"));
+    AuthorParser[] authors = gson.fromJson(jread, AuthorParser[].class);
+
+    for (var author : authors) {
+      // Create query
+      String sql = "INSERT INTO author(author_name, author_email, author_url ) VALUES (?, ?, ? )";
+
+      // Set as prepared statement to put dynamic values
+      PreparedStatement preparedStatement = conn.prepareStatement(sql);
+
+      // Insert dynamic values
+      preparedStatement.setString(1, author.getName());
+      preparedStatement.setString(2, author.getEmail());
+      preparedStatement.setString(3, author.getURL());
+      // Execute query
+      preparedStatement.executeUpdate();
+
+      preparedStatement.close();
+    }
+    conn.close();
+    System.out.println("Connection to database has been successfully closed!");
   }
 }
+
